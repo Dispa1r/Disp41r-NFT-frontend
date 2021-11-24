@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Disp41r day3 challenge</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Font Awesome icons (free version)-->
+    <script src="https://use.fontawesome.com/releases/v5.15.4/js/all.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/near-api-js/dist/near-api-js.min.js"></script>
+    <script src="js/big.js"></script>
+    <!-- Google fonts-->
+    <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+
+<script>
+    var CONTRACT_NAME = 'dispa1r_nft.testnet';
+
+    function change(i) {
+        var tm = setInterval(function() {
+            var t = $(window).scrollTop();
+            var d = i < t ? Math.min((i - t) / 10, -1) : Math.max((i - t) / 10, 1)
+            $(window).scrollTop(t + d);
+            if ($(window).scrollTop() == i) clearInterval(tm);
+        }, 30)
+    }
+
+
+    async function connect() {
+        let near = await nearApi.connect({
+            nodeUrl: "https://rpc.testnet.near.org",
+            walletUrl: "https://wallet.testnet.near.org",
+            helperUrl: "https://helper.testnet.near.org",
+            explorerUrl: "https://explorer.testnet.near.org",
+            networkId: 'testnet',
+            keyStore: new window.nearApi.keyStores.BrowserLocalStorageKeyStore(window.localStorage, 'crystal')
+        });
+
+        window.walletConnection = new nearApi.WalletConnection(near);
+        let account;
+        if (window.walletConnection.isSignedIn()) {
+            // Logged in account, can write as user signed up through wallet
+            account = walletConnection.account();
+            // connect to a NEAR smart contract
+            window.contract = new nearApi.Contract(account, CONTRACT_NAME, {
+                viewMethods: [],
+                changeMethods: ['HelloWorld']
+            });
+        } else {
+            // Contract account, normally only gonna work in read only mode
+            account = new nearApi.Account(near.connection, CONTRACT_NAME);
+            //console.log(account);
+        }
+        change(3);
+    }
+
+    // Log in user using NEAR Wallet on "Sign In" button click
+    async function signIn() {
+        const keyStore1 = new window.nearApi.keyStores.InMemoryKeyStore();
+        const PRIVATE_KEY =
+            "2XTrg8ohErY1ct2z3x781LV8w9TMjxUtzSKwKHxundH7ut3akiFFE1Kpvxc1r36nryk7Pjwq9h4wpphoPXmxEK9C";
+        // creates a public / private key pair using the provided private key
+        const keyPair = window.nearApi.KeyPair.fromString(PRIVATE_KEY);
+        // adds the keyPair you created to keyStore
+        await keyStore1.setKey("testnet", "dispa1r_nft.testnet", keyPair);
+        let near = await nearApi.connect({
+            nodeUrl: "https://rpc.testnet.near.org",
+            walletUrl: "https://wallet.testnet.near.org",
+            helperUrl: "https://helper.testnet.near.org",
+            explorerUrl: "https://explorer.testnet.near.org",
+            networkId: 'testnet',
+            keyStore: keyStore1,
+        });
+        window.walletConnection = new nearApi.WalletConnection(near);
+        console.log(window.walletConnection);
+        if (!walletConnection.isSignedIn()) {
+            await walletConnection.requestSignIn(CONTRACT_NAME, 'Nearvember');
+
+        }
+        if (walletConnection.isSignedIn()) {
+            //window.location.href = "./hack.html";
+            window.userName = window.walletConnection.getAccountId();
+            document.getElementById("p1").innerHTML = "hello ! " + userName;
+            //console.log(userName);
+            window.tmpAccount = await near.account("dispa1r_nft.testnet");
+            // connect to a NEAR smart contract
+            console.log(tmpAccount);
+            window.contract = new nearApi.Contract(window.tmpAccount, CONTRACT_NAME, {
+                viewMethods: ['nft_tokens_for_owner'],
+                changeMethods: ['nft_mint', 'nft_transfer'],
+                sender: window.tmpAccount
+            });
+            console.log(contract);
+            document.getElementById('input-query').value = window.userName;
+        }
+
+
+    }
+    async function callHello() {
+        // call the contract
+
+        let resp = await window.contract.HelloWorld({
+                args: {
+                    name: document.getElementById('input').value
+                }
+            })
+            // //testing code
+            // let contract = "test";
+
+        // clear the form
+        // Output from contract
+        document.getElementById('response').innerHTML = resp;
+        return resp;
+    }
+
+    function toNear(value) {
+        return Big(value).times(10 ** 24).toFixed();
+    }
+
+    async function callMint() {
+        const keyStore1 = new window.nearApi.keyStores.InMemoryKeyStore();
+        const PRIVATE_KEY =
+            "2XTrg8ohErY1ct2z3x781LV8w9TMjxUtzSKwKHxundH7ut3akiFFE1Kpvxc1r36nryk7Pjwq9h4wpphoPXmxEK9C";
+        // creates a public / private key pair using the provided private key
+        const keyPair = window.nearApi.KeyPair.fromString(PRIVATE_KEY);
+        // adds the keyPair you created to keyStore
+        await keyStore1.setKey("testnet", "dispa1r_nft.testnet", keyPair);
+        var depositNum = toNear(0.1);
+        console.log(depositNum);
+        let near = await nearApi.connect({
+            nodeUrl: "https://rpc.testnet.near.org",
+            walletUrl: "https://wallet.testnet.near.org",
+            helperUrl: "https://helper.testnet.near.org",
+            explorerUrl: "https://explorer.testnet.near.org",
+            networkId: 'testnet',
+            keyStore: keyStore1,
+        });
+        window.tmpAccount = await near.account("dispa1r_nft.testnet");
+        // connect to a NEAR smart contract
+        console.log(tmpAccount);
+        window.contract = new nearApi.Contract(window.tmpAccount, CONTRACT_NAME, {
+            viewMethods: ['nft_tokens_for_owner'],
+            changeMethods: ['nft_mint', 'nft_transfer'],
+            sender: window.tmpAccount
+        });
+        // call the contract
+        var imageUrl = document.getElementById('input-url').value;
+        var imageTitle = document.getElementById('input-title').value;
+        var imageDesp = document.getElementById('input-des').value;
+        var id = document.getElementById('input-id').value;
+        console.log(id);
+        let resp = await window.contract.nft_mint({
+                token_id: id,
+                receiver_id: window.userName,
+                token_metadata: {
+                    title: imageTitle,
+                    description: imageDesp,
+                    media: imageUrl,
+                    copies: 1,
+                }
+
+            }, 300000000000000, depositNum)
+            // //testing code
+            // let contract = "test";
+
+        // clear the form
+        // Output from contract
+        console.log(resp)
+        document.getElementById('response').innerHTML = "Success!!!" + JSON.stringify(resp);
+
+        return resp;
+    }
+
+    async function signOut() {
+        await window.walletConnection.signOut();
+        location.reload();
+
+    }
+
+    async function callQuery() {
+
+        const keyStore1 = new window.nearApi.keyStores.InMemoryKeyStore();
+        const PRIVATE_KEY =
+            "2XTrg8ohErY1ct2z3x781LV8w9TMjxUtzSKwKHxundH7ut3akiFFE1Kpvxc1r36nryk7Pjwq9h4wpphoPXmxEK9C";
+        // creates a public / private key pair using the provided private key
+        const keyPair = window.nearApi.KeyPair.fromString(PRIVATE_KEY);
+        // adds the keyPair you created to keyStore
+        await keyStore1.setKey("testnet", "dispa1r_nft.testnet", keyPair);
+        var depositNum = toNear(0.1);
+        console.log(depositNum);
+        let near = await nearApi.connect({
+            nodeUrl: "https://rpc.testnet.near.org",
+            walletUrl: "https://wallet.testnet.near.org",
+            helperUrl: "https://helper.testnet.near.org",
+            explorerUrl: "https://explorer.testnet.near.org",
+            networkId: 'testnet',
+            keyStore: keyStore1,
+        });
+        window.tmpAccount = await near.account("dispa1r_nft.testnet");
+        // connect to a NEAR smart contract
+        console.log(tmpAccount);
+        window.contract = new nearApi.Contract(window.tmpAccount, CONTRACT_NAME, {
+            viewMethods: ['nft_tokens_for_owner'],
+            changeMethods: ['nft_mint', 'nft_transfer'],
+            sender: window.tmpAccount
+        });
+        let resp = await window.contract.nft_tokens_for_owner({
+            account_id: document.getElementById('input-query').value,
+        })
+        console.log(resp[0])
+        for (var k in resp) { //遍历packJson 对象的每个key/value对,k为key
+            console.log(resp[k].token_id)
+            console.log(resp[k].metadata.media)
+            var createDiv = document.createElement("div");
+            var result = document.getElementById("result");
+            createDiv.innerHTML = "<h2>Token Id ：" + resp[k].token_id + ":</h2>       " + "<img src=\"" + resp[k].metadata.media + "\" style=\"width: 400px;height:200px\"> </br></br>" + "";
+            document.getElementById('result').appendChild(createDiv);
+        }
+        //document.getElementById('result').innerHTML = "Success!!!" + JSON.stringify(resp);
+    }
+    async function callTransfer() {
+        let near = await nearApi.connect({
+            nodeUrl: "https://rpc.testnet.near.org",
+            walletUrl: "https://wallet.testnet.near.org",
+            helperUrl: "https://helper.testnet.near.org",
+            explorerUrl: "https://explorer.testnet.near.org",
+            networkId: 'testnet',
+            keyStore: new window.nearApi.keyStores.BrowserLocalStorageKeyStore(window.localStorage, 'dispa1r')
+        });
+        window.walletConnection = new nearApi.WalletConnection(near);
+        // connect to a NEAR smart contract
+        var account1 = window.walletConnection.account();
+        window.contract1 = new nearApi.Contract(account1, CONTRACT_NAME, {
+            viewMethods: ['nft_tokens_for_owner'],
+            changeMethods: ['nft_transfer', 'nft_mint'],
+        });
+        console.log(window.contract1);
+        var tokenId = document.getElementById("input-tran-id").value;
+        var receId = document.getElementById("input-tran").value;
+        let resp = await window.contract1.nft_transfer({
+            token_id: tokenId,
+            receiver_id: receId,
+            momo: "transfer ownership"
+        }, 300000000000000, 1)
+        var createDiv = document.createElement("div");
+        createDiv.innerHTML = "<h2>Success to transfer the nft</h2>";
+        document.getElementById('transfer').appendChild(createDiv);
+        //document.getElementById('result').innerHTML = "Success!!!" + JSON.stringify(resp);
+    }
+</script>
+
+<body id="page-top">
+
+    <!-- Masthead-->
+    <header class="masthead">
+        <div class="container px-4 px-lg-5 d-flex h-100 align-items-center justify-content-center">
+            <div class="d-flex justify-content-center">
+                <div class="text-center">
+                    <h1 class="mx-auto my-0 text-uppercase">NEAR</h1>
+                    <h2 class="text-white-50 mx-auto mt-2 mb-5">Just go and hack it!</h2>
+                    <h2 class="text-white-50 mx-auto mt-2 mb-5">After click the connect wallet or reload the page, please click it again until your account shows blow</h2>
+                    <div class="sign-in">
+                        <button onclick="signIn()" type="button" class="btn btn-primary">Connect wallet</a>
+                        </br>
+                        <button onclick="signOut()" type="button" class="btn btn-primary">Sign out</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Projects-->
+    <div>
+        <p id="p1">Hello World!</p>
+    </div>
+
+    <div class="row input-group-newsletter">
+        <div class="col">
+            <input class="form-control" id="input-url" placeholder="please input the url of image" />
+        </div>
+        <div class="col">
+            <input class="form-control" id="input-id" placeholder="please input the token id" />
+        </div>
+        <div class="col">
+            <input class="form-control" id="input-title" placeholder="please input the title" />
+        </div>
+        <div class="col">
+            <input class="form-control" id="input-des" placeholder="please input the description" />
+        </div>
+        <div class="col-auto">
+            <button onclick="callMint()" class="btn btn-primary" id="submitButton" type="submit">Mint!</button>
+                    </div>
+                    </br>
+                    </br>
+                    </br>
+                    </br>
+
+
+                </div>
+                <div class="col-auto">
+                    <div class="col">
+                        <input class="form-control" id="input-query" placeholder="please input the accoutId you want to query" />
+                    </div>
+                    </br>
+                    <center>
+                        after query the NFT, please reload the page :)
+                        <button onclick="callQuery()" class="btn btn-primary" id="submitButton" type="submit">Query!</button>
+                    </center>
+                </div>
+                </br>
+                </br>
+                <div>
+                    <div class="col">
+                        <input class="form-control" id="input-tran" placeholder="please input the accoutId of people to transfer" />
+                    </div>
+                    </br>
+                    <div class="col">
+                        <input class="form-control" id="input-tran-id" placeholder="please input the Id of nft" />
+                    </div>
+                    </br>
+                    <div class="col-auto" id="transfer">
+                        <center>
+                            <button onclick="callTransfer()" class="btn btn-primary" id="submitButton" type="submit">Transfer!</button>
+                        </center>
+                    </div>
+                </div>
+                </br>
+                </br>
+                <h2 id="response">Response will take time</h2>
+                <h2 id="result">your nfts are here</h2>
+
+                </br>
+                </br>
+                </br>
+                </br>
+                </br>
+                </br>
+                </br>
+                </br>
+
+                <div class="Footer">
+                    <!-- Footer-->
+                    <footer class="footer bg-black small text-center text-white-50">
+                        <div class="container px-4 px-lg-5">Copyright &copy; Your Website 2021</div>
+                    </footer>
+                    <!-- Bootstrap core JS-->
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+                    <!-- Core theme JS-->
+                    <script src="js/scripts.js"></script>
+                    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *-->
+                    <!-- * *                               SB Forms JS                               * *-->
+                    <!-- * * Activate your form at https://startbootstrap.com/solution/contact-forms * *-->
+                    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *-->
+                    <script src="https://cdn.startbootstrap.com/sb-forms-latest.js"></script>
+                </div>
+</body>
+
+</html>
